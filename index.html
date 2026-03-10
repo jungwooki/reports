@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S-REPORT | Growth & PHV Report</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      background: #eef2f7;
+      color: #334155;
+    }
+
+    .report-wrap {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 6mm 0 12mm;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      margin: 0 auto 8mm auto;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+      page-break-after: always;
+      break-after: page;
+      overflow: visible;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    .page-inner {
+      height: 297mm;
+      box-sizing: border-box;
+      padding: 10mm 11mm 7mm 11mm;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      row-gap: 3.5mm;
+    }
+
+    .page-header,
+    .page-content,
+    .page-footer {
+      min-height: 0;
+    }
+
+    .page-content {
+      overflow: visible;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      flex-shrink: 0;
+      opacity: 0.78;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-mark {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: #0284c7;
+    }
+
+    .report-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .report-subtitle {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .page-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #0369a1;
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      border-radius: 9999px;
+      padding: 5px 10px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .soft-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .safe-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    .phase-container {
+      display: flex;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #f1f5f9;
+    }
+
+    .phase-step {
+      flex: 1;
+      text-align: center;
+      padding: 7px 2px;
+      font-size: 9px;
+      color: #64748b;
+      border-right: 1px solid #ffffff;
+      background: #f8fafc;
+    }
+
+    .phase-step:last-child {
+      border-right: none;
+    }
+
+    .phase-bg-active {
+      background-color: #0ea5e9;
+      font-weight: 700;
+      color: white;
+      border-radius: 3px;
+    }
+
+    .marker-arrow {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #ef4444;
+      margin: 0 auto 3px auto;
+    }
+
+    .footer-note {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 10px;
+      font-size: 7px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 2.5mm;
+      line-height: 1.3;
+    }
+
+    .footer-copy {
+      font-weight: 700;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .tiny {
+      font-size: 7px;
+      line-height: 1.3;
+    }
+
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      height: 170px;
+    }
+
+    .canvas-box-lg {
+      position: relative;
+      width: 100%;
+      height: 205px;
+    }
+
+    .input-panel {
+      width: 210mm;
+      margin: 0 auto 8mm auto;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+      padding: 18px;
+    }
+
+    textarea {
+      overflow: hidden;
+    }
+
+    .doctor-input {
+      width: 84px;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid #cbd5e1;
+      outline: none;
+      text-align: right;
+      font-weight: 700;
+      color: #334155;
+      padding: 1px 2px;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      * {
+        filter: none !important;
+        backdrop-filter: none !important;
+        text-shadow: none !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .report-wrap {
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+
+      .card,
+      .soft-card {
+        box-shadow: none !important;
+      }
+
+      textarea {
+        resize: none !important;
+        overflow: hidden !important;
+      }
+
+      .doctor-input {
+        border-bottom: 1px solid #cbd5e1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="input-panel no-print">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-xl font-bold text-slate-800">S-REPORT 데이터 설정</h1>
+      <div class="flex gap-2">
+        <button onclick="window.print()" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+          PDF 인쇄
+        </button>
+        <button onclick="generateReport()" class="px-6 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-colors">
+          결과 새로고침
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">이름</label>
+        <input type="text" id="name" value="김민준" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">성별</label>
+        <select id="gender" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+          <option value="male">남자</option>
+          <option value="female">여자</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">검사일</label>
+        <input type="date" id="visitDate" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">생년월일</label>
+        <input type="date" id="birthDate" value="2012-05-20" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">현재 키 (cm)</label>
+        <input type="number" id="height" value="145.5" step="0.1" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">현재 체중 (kg)</label>
+        <input type="number" id="weight" value="38.2" step="0.1" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">골연령 (년)</label>
+        <input type="number" id="boneAgeYear" value="12" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">골연령 (개월)</label>
+        <input type="number" id="boneAgeMonth" value="6" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">아버지 키 (cm)</label>
+        <input type="number" id="fatherHeight" value="175" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">어머니 키 (cm)</label>
+        <input type="number" id="motherHeight" value="162" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">성장 단계</label>
+        <select id="growthPhase" class="w-full rounded-lg border border-primary-200 bg-primary-50 p-2.5 text-sm">
+          <option value="Pre-PHV">Pre-PHV (급성장 전)</option>
+          <option value="Stage 1">Stage 1 (가속기)</option>
+          <option value="Stage 2" selected>Stage 2 (PHV - 최고성장)</option>
+          <option value="Stage 3">Stage 3 (감속기)</option>
+          <option value="Stage 4">Stage 4 (종료 초기)</option>
+          <option value="Stage 5">Stage 5 (종료 임박)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">예측 키 PAH (cm)</label>
+        <input type="number" id="predictedHeight" value="174" step="0.1" class="w-full rounded-lg border border-indigo-200 bg-indigo-50 p-2.5 text-sm font-bold text-indigo-800">
+      </div>
+    </div>
+  </div>
+
+  <div class="report-wrap">
+    <!-- PAGE 1 -->
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="report-header">
+            <div class="brand-wrap">
+              <img src="logo.png" alt="S-REPORT Logo" class="brand-logo" />
+              <div class="brand-text">
+                <div class="brand-mark">S-REPORT</div>
+                <div class="report-title">성장 종합분석 리포트</div>
+                <div class="report-subtitle">Sports Athlete Growth Summary Report</div>
+              </div>
+            </div>
+            <div class="page-badge">PAGE 1 · 종합분석</div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <div class="card p-4 mb-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <h2 class="text-2xl font-bold text-slate-800 flex items-baseline gap-2 safe-text">
+                  <span id="dispName">김민준</span>
+                  <span class="text-base font-normal text-slate-500">선수</span>
+                </h2>
+                <p class="text-sm text-slate-500 mt-1 safe-text">
+                  <span id="dispAge" class="font-medium text-slate-700">11세 2개월</span> ·
+                  <span id="dispGender" class="font-medium text-slate-700">남아</span>
+                </p>
+              </div>
+              <div class="text-right bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                <div class="text-xs text-slate-400 font-medium mb-0.5 safe-text">최근 검사일</div>
+                <div class="text-sm font-semibold text-slate-700 safe-text" id="dispDate">2026.02.19</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-3 mb-3">
+            <div class="card p-3">
+              <div class="text-[11px] font-semibold text-slate-400 mb-2 safe-text">현재 키</div>
+              <div class="flex items-baseline gap-1 safe-text">
+                <span class="text-3xl font-bold text-slate-800" id="resHeight">145.5</span>
+                <span class="text-sm text-slate-500">cm</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-primary-600 bg-primary-50 w-max px-2 py-0.5 rounded-md safe-text" id="resHeightPct">상위 50%</div>
+            </div>
+
+            <div class="card p-3">
+              <div class="text-[11px] font-semibold text-slate-400 mb-2 safe-text">현재 체중</div>
+              <div class="flex items-baseline gap-1 safe-text">
+                <span class="text-3xl font-bold text-slate-800" id="resWeight">38.2</span>
+                <span class="text-sm text-slate-500">kg</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-max px-2 py-0.5 rounded-md safe-text" id="resWeightPct">상위 50%</div>
+            </div>
+
+            <div class="card p-3">
+              <div class="text-[11px] font-semibold text-slate-400 mb-2 safe-text">BMI</div>
+              <div class="flex items-baseline gap-1 safe-text">
+                <span class="text-3xl font-bold text-slate-800" id="resBMI">18.0</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-indigo-600 bg-indigo-50 w-max px-2 py-0.5 rounded-md safe-text" id="resBmiStatus">정상 범위</div>
+            </div>
+
+            <div class="card p-3">
+              <div class="text-[11px] font-semibold text-slate-400 mb-2 safe-text">골연령</div>
+              <div class="flex items-baseline gap-1 safe-text">
+                <span class="text-xl font-bold text-slate-800" id="resBoneAge">12세 6개월</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-amber-600 bg-amber-50 w-max px-2 py-0.5 rounded-md safe-text" id="resBoneGap">+1.3년 빠름</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="card p-4">
+              <div class="flex justify-between items-center mb-3">
+                <h3 class="section-title mb-0 safe-text">성장 단계</h3>
+                <span id="currentPhaseBadge" class="text-xs font-bold bg-primary-100 text-primary-700 px-3 py-1 rounded-full safe-text">Stage 2 (PHV)</span>
+              </div>
+
+              <div class="relative pt-5 pb-3">
+                <div id="phaseMarker" class="absolute" style="left: 41%; top: 0;">
+                  <div class="text-[10px] font-bold text-red-500 text-center w-20 -ml-10 mb-0.5 safe-text">현재 위치</div>
+                  <div class="marker-arrow"></div>
+                </div>
+
+                <div class="phase-container">
+                  <div id="ph-pre" class="phase-step">Pre-PHV<br><span class="text-[8px] font-normal">준비기</span></div>
+                  <div id="ph-s1" class="phase-step">Stage 1<br><span class="text-[8px] font-normal">가속기</span></div>
+                  <div id="ph-s2" class="phase-step">Stage 2<br><span class="text-[8px] font-normal">최고성장기</span></div>
+                  <div id="ph-s3" class="phase-step">Stage 3<br><span class="text-[8px] font-normal">감속기</span></div>
+                  <div id="ph-s4" class="phase-step">Stage 4<br><span class="text-[8px] font-normal">종료초기</span></div>
+                  <div id="ph-s5" class="phase-step">Stage 5<br><span class="text-[8px] font-normal">종료임박</span></div>
+                </div>
+              </div>
+
+              <div class="mt-2 text-[13px] text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 safe-text" id="phaseDescription">
+                현재 아이는 최고 성장 속도 구간에 있습니다. 이 시기는 키가 가장 많이 크는 때이므로 영양과 수면 관리가 중요합니다.
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <h3 class="section-title safe-text">최종 키 예측 분석 (PAH)</h3>
+              <div class="canvas-box">
+                <canvas id="pahChart"></canvas>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 mt-2">
+                <div class="text-center p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <div class="text-[10px] text-slate-400 mb-1 safe-text">유전적 예측 (MPH)</div>
+                  <div class="font-bold text-slate-700 text-sm safe-text" id="valMPH">173.5 cm</div>
+                </div>
+                <div class="text-center p-2 rounded-lg bg-primary-50 border border-primary-100">
+                  <div class="text-[10px] text-primary-500 font-bold mb-1 safe-text">현재 키</div>
+                  <div class="font-bold text-primary-700 text-sm safe-text" id="valCurHeight">145.5 cm</div>
+                </div>
+                <div class="text-center p-2 rounded-lg bg-indigo-50 border border-indigo-100">
+                  <div class="text-[10px] text-indigo-500 font-bold mb-1 safe-text">입력 예측 키 (PAH)</div>
+                  <div class="font-bold text-indigo-700 text-[12px] whitespace-nowrap safe-text" id="valBone">172.5 ~ 175.5 cm</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <h3 class="section-title safe-text">유소년선수 스포츠과학 x 스포츠한의학 동적 성장평가</h3>
+
+            <div class="soft-card p-3">
+              <textarea
+                id="medicalOpinionText"
+                class="w-full min-h-[140px] bg-transparent border-0 outline-none resize-none text-[13px] text-slate-700 leading-relaxed safe-text"
+              >급성장 초기 단계에 진입했습니다. 성장판 자극과 신체 성숙이 빨라지는 시기이므로 충분한 수면과 균형 잡힌 영양 섭취가 필요합니다. 스포츠선수라면 훈련 부하를 세심히 조절해야 합니다.</textarea>
+            </div>
+
+            <div class="mt-2 flex justify-end">
+              <div class="text-sm text-slate-500 safe-text flex items-center gap-2">
+                <span>담당:</span>
+                <input
+                  type="text"
+                  id="doctorName"
+                  value="이정욱"
+                  class="doctor-input safe-text"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <div class="footer-note">
+            <div class="footer-copy">© juniorgoldenage</div>
+            <div class="tiny text-right safe-text">
+              본 출력물은 juniorgoldenage의 데이터 시각화 리포트입니다. 의료법상 의료행위를 직접 수행하지 않으며, 제휴 의료기관의 검사 결과를 기반으로 분석 정보를 제공합니다. 의학적 판단 및 진단은 반드시 의료진을 통해 확인해야 합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2 -->
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="report-header">
+            <div class="brand-wrap">
+              <img src="logo.png" alt="S-REPORT Logo" class="brand-logo" />
+              <div class="brand-text">
+                <div class="brand-mark">S-REPORT</div>
+                <div class="report-title">성장곡선 분석</div>
+                <div class="report-subtitle">다중 백분위 성장곡선</div>
+              </div>
+            </div>
+            <div class="page-badge">PAGE 2 · 성장곡선</div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <div class="card p-4 mb-3">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <h3 class="section-title mb-0 safe-text">신장 곡선 (Height for Age)</h3>
+                <p class="text-sm text-slate-500 safe-text">3rd · 10th · 25th · 50th · 75th · 90th · 97th</p>
+              </div>
+              <span id="chartHeightPct" class="text-sm font-bold text-primary-700 bg-primary-50 border border-primary-100 px-4 py-1.5 rounded-lg safe-text">
+                145.5cm
+              </span>
+            </div>
+            <div class="canvas-box-lg">
+              <canvas id="heightChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <h3 class="section-title mb-0 safe-text">체중 곡선 (Weight for Age)</h3>
+                <p class="text-sm text-slate-500 safe-text">3rd · 10th · 25th · 50th · 75th · 90th · 97th</p>
+              </div>
+              <span id="chartWeightPct" class="text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-lg safe-text">
+                38.2kg
+              </span>
+            </div>
+            <div class="canvas-box-lg">
+              <canvas id="weightChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <div class="footer-note">
+            <div class="footer-copy">© juniorgoldenage</div>
+            <div class="tiny text-right safe-text">
+              본 출력물은 juniorgoldenage의 데이터 시각화 리포트입니다. 의료법상 의료행위를 직접 수행하지 않으며, 제휴 의료기관의 검사 결과를 기반으로 분석 정보를 제공합니다. 의학적 판단 및 진단은 반드시 의료진을 통해 확인해야 합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3 -->
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="report-header">
+            <div class="brand-wrap">
+              <img src="logo.png" alt="S-REPORT Logo" class="brand-logo" />
+              <div class="brand-text">
+                <div class="brand-mark">S-REPORT</div>
+                <div class="report-title">스포츠 선수 맞춤관리</div>
+                <div class="report-subtitle">Training · Recovery · Nutrition · Injury Prevention</div>
+              </div>
+            </div>
+            <div class="page-badge">PAGE 3 · 맞춤관리</div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="card p-4">
+              <div class="flex items-center mb-2 border-b border-slate-100 pb-2">
+                <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-lg mr-3">🏃‍♂️</div>
+                <h3 class="text-base font-bold text-slate-800 safe-text">훈련 부하 관리</h3>
+              </div>
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• PHV 전후에는 키 성장은 빠르지만 신경근 제어가 흔들릴 수 있습니다.</li>
+                <li>• 훈련량보다 경기 수와 회복 상태를 함께 봐야 합니다.</li>
+                <li>• 급성장기에는 점프, 급가속, 방향전환 반복량을 세밀하게 조절하는 것이 중요합니다.</li>
+                <li>• 많이 하는 것보다 잘 회복하며 이어가는 것이 장기 성장에 유리합니다.</li>
+              </ul>
+            </div>
+
+            <div class="card p-4">
+              <div class="flex items-center mb-2 border-b border-slate-100 pb-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-lg mr-3">😴</div>
+                <h3 class="text-base font-bold text-slate-800 safe-text">회복 관리</h3>
+              </div>
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• 성장기 선수에게 수면은 회복과 적응의 핵심입니다.</li>
+                <li>• 경기 다음날 피로감과 근육 뻣뻣함이 반복되면 회복 전략을 조정해야 합니다.</li>
+                <li>• 일정한 취침 시각과 숙면의 질이 중요합니다.</li>
+                <li>• 아침 기상 시 다리 무거움이나 아킬레스 뻣뻣함이 있으면 부하를 재점검하세요.</li>
+              </ul>
+            </div>
+
+            <div class="card p-4">
+              <div class="flex items-center mb-2 border-b border-slate-100 pb-2">
+                <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-lg mr-3">🥗</div>
+                <h3 class="text-base font-bold text-slate-800 safe-text">영양 관리</h3>
+              </div>
+
+              <div class="mb-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <div class="text-[10px] font-bold text-slate-500 mb-1 safe-text">체성분 기반 코멘트</div>
+                <p class="text-[12px] text-slate-700 safe-text" id="bwaComment1">현재 BMI는 표준 범위 내에 있습니다.</p>
+                <p class="text-[12px] text-slate-700 mt-1 safe-text" id="bwaComment2">급성장기에 필요한 단백질과 칼슘 섭취를 유지하세요.</p>
+              </div>
+
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• 성장, 훈련 적응, 회복을 함께 고려해야 합니다.</li>
+                <li>• 단백질, 칼슘, 비타민 D, 철분은 특히 중요합니다.</li>
+                <li>• 편식이나 식사량 감소는 성장속도와 회복력을 흔들 수 있습니다.</li>
+                <li>• 경기 전후 수분과 탄수화물, 단백질 공급 타이밍도 중요합니다.</li>
+              </ul>
+            </div>
+
+            <div class="card p-4">
+              <div class="flex items-center mb-2 border-b border-slate-100 pb-2">
+                <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-lg mr-3">🛡️</div>
+                <h3 class="text-base font-bold text-slate-800 safe-text">부상 예방 포인트</h3>
+              </div>
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• PHV 전후에는 오스굿, 세버병, 슬개건, 햄스트링, 아킬레스 이슈가 늘 수 있습니다.</li>
+                <li>• 갑자기 턴이 어색해지면 성장 적응 문제일 수 있습니다.</li>
+                <li>• 유연성 저하와 밸런스 흔들림은 급성장기 선수에게 흔한 신호입니다.</li>
+                <li>• 반복적인 피로 누적은 통증보다 경기력 저하로 먼저 나타날 수 있습니다.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card p-4 bg-slate-800 text-white border-slate-700 text-center">
+            <h3 class="text-base font-bold mb-2 safe-text">다음 점검 권장</h3>
+            <p class="text-sm text-slate-300 mb-3 safe-text">
+              성장 속도와 체성분 변화 확인을 위해 약 <strong>3개월 후</strong> 재평가를 권장합니다.
+            </p>
+
+            <div class="flex flex-col items-center justify-center">
+              <div class="text-sm text-slate-300 mb-2 safe-text">예상 재평가일</div>
+              <div id="nextVisitDate" class="inline-flex items-center justify-center bg-white/10 border border-white/20 px-6 py-2 rounded-full text-base font-bold text-sky-300 safe-text">
+                2026.06.09
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <div class="footer-note">
+            <div class="footer-copy">© juniorgoldenage</div>
+            <div class="tiny text-right safe-text">
+              본 출력물은 juniorgoldenage의 데이터 시각화 리포트입니다. 의료법상 의료행위를 직접 수행하지 않으며, 제휴 의료기관의 검사 결과를 기반으로 분석 정보를 제공합니다. 의학적 판단 및 진단은 반드시 의료진을 통해 확인해야 합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4 -->
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="report-header">
+            <div class="brand-wrap">
+              <img src="logo.png" alt="S-REPORT Logo" class="brand-logo" />
+              <div class="brand-text">
+                <div class="brand-mark">S-REPORT</div>
+                <div class="report-title">보호자를 위한 용어 설명</div>
+                <div class="report-subtitle">우리 아이의 성장, 조금 더 길게 보는 법</div>
+              </div>
+            </div>
+            <div class="page-badge">PAGE 4 · 용어 설명</div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <div class="card p-4">
+            <div class="space-y-4">
+              <div class="flex gap-4 border-b border-slate-100 pb-3">
+                <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-primary-50 rounded-2xl text-lg">📈</div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-800 mb-1 safe-text">성장 단계와 PHV는 왜 중요할까요?</h3>
+                  <p class="text-[12px] text-slate-600 leading-relaxed mb-2 safe-text">
+                    아이들은 같은 학년이어도 성장 속도가 모두 다릅니다. 어떤 아이는 먼저 크고, 어떤 아이는 늦게 큽니다. 그래서 지금 당장 키가 큰지, 힘이 센지만 보고 가능성을 판단하면 놓치는 것이 많습니다.
+                  </p>
+                  <div class="bg-slate-50 p-3 rounded-xl text-[12px] text-slate-600 space-y-1 safe-text">
+                    <p><span class="font-semibold text-slate-700">Pre-PHV:</span> 아직 본격적인 급성장이 오기 전입니다. 기술과 균형, 움직임 습관이 중요합니다.</p>
+                    <p><span class="font-semibold text-slate-700">Stage 1~2:</span> 키가 빠르게 크는 시기입니다. 몸이 갑자기 변해 어색해질 수 있고 수면과 영양이 중요합니다.</p>
+                    <p><span class="font-semibold text-slate-700">Stage 3~5:</span> 성장이 마무리됩니다. 남은 성장 여지와 함께 체형, 회복, 부상 예방을 함께 봐야 합니다.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-4 border-b border-slate-100 pb-3">
+                <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-amber-50 rounded-2xl text-lg">🦴</div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-800 mb-1 safe-text">골연령은 무엇인가요?</h3>
+                  <p class="text-[12px] text-slate-600 leading-relaxed safe-text">
+                    골연령은 뼈가 얼마나 성숙했는지를 보는 값입니다. 실제 나이보다 골연령이 빠르면 성장판이 빨리 닫힐 수 있고, 반대로 느리면 지금은 작아 보여도 나중에 더 클 여지가 남아 있을 수 있습니다.
+                  </p>
+                  <p class="text-[12px] text-slate-500 mt-1 safe-text">
+                    그래서 성장 평가는 지금 몇 cm인가보다 앞으로 얼마나 더 클 수 있는가를 함께 봐야 합니다.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex gap-4 border-b border-slate-100 pb-3">
+                <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-emerald-50 rounded-2xl text-lg">📊</div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-800 mb-1 safe-text">백분위수는 점수가 아닙니다</h3>
+                  <p class="text-[12px] text-slate-600 leading-relaxed safe-text">
+                    백분위수는 같은 성별, 같은 나이 아이들 안에서 현재 위치가 어느 정도인지를 보여주는 값입니다. 시험 점수처럼 잘했다 못했다를 뜻하는 것이 아니라 또래 안에서의 위치를 보여주는 참고값입니다.
+                  </p>
+                  <p class="text-[12px] text-slate-500 mt-1 safe-text">
+                    예를 들어 75th라면 또래 중 큰 편, 25th라면 또래 중 작은 편이라고 이해하면 됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex gap-4">
+                <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-indigo-50 rounded-2xl text-lg">📏</div>
+                <div class="w-full">
+                  <h3 class="text-base font-bold text-slate-800 mb-1 safe-text">예측 키는 어떻게 봐야 하나요?</h3>
+                  <p class="text-[12px] text-slate-600 leading-relaxed safe-text">
+                    예측 키는 하나의 확정 결과가 아니라 현재 자료를 바탕으로 본 가능성의 범위입니다. 부모님의 키만 반영한 유전적 예측과, 현재 키와 골연령, 성장속도를 반영한 현실적 예측은 서로 다를 수 있습니다.
+                  </p>
+                  <p class="text-[12px] text-slate-500 mt-1 safe-text">
+                    중요한 것은 숫자 하나보다 아이가 지금 어떤 성장 구간에 있는지 이해하고 그 시기에 맞는 관리를 해주는 것입니다.
+                  </p>
+
+                  <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                      <strong class="block text-sm text-slate-700 mb-1 safe-text">MPH</strong>
+                      <p class="text-xs text-slate-500 leading-relaxed safe-text">부모 키를 바탕으로 계산한 유전적 예측 키입니다.</p>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl">
+                      <strong class="block text-sm text-indigo-800 mb-1 safe-text">PAH</strong>
+                      <p class="text-xs text-indigo-600 leading-relaxed safe-text">현재 키, 골연령, 성장단계 등을 반영한 현실적인 예측 키입니다.</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-2 bg-sky-50 border border-sky-100 rounded-xl p-3">
+                    <p class="text-[12px] text-slate-700 leading-relaxed safe-text">
+                      지금 아이가 조금 작아 보여도, 혹은 잠깐 경기력이 흔들려 보여도 너무 빨리 결론 내리지 않는 것이 중요합니다. 성장에는 저마다의 타이밍이 있고, 그 타이밍을 이해해 주는 보호자의 시선이 아이에게 큰 힘이 됩니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <div class="footer-note">
+            <div class="footer-copy">© juniorgoldenage</div>
+            <div class="tiny text-right safe-text">
+              본 출력물은 juniorgoldenage의 데이터 시각화 리포트입니다. 의료법상 의료행위를 직접 수행하지 않으며, 제휴 의료기관의 검사 결과를 기반으로 분석 정보를 제공합니다. 의학적 판단 및 진단은 반드시 의료진을 통해 확인해야 합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 5 -->
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="report-header">
+            <div class="brand-wrap">
+              <img src="logo.png" alt="S-REPORT Logo" class="brand-logo" />
+              <div class="brand-text">
+                <div class="brand-mark">S-REPORT</div>
+                <div class="report-title">PHV와 스포츠 수행능력</div>
+                <div class="report-subtitle">왜 지금의 몸 상태를 길게 봐야 할까요?</div>
+              </div>
+            </div>
+            <div class="page-badge">PAGE 5 · PHV 안내자료</div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <div class="card p-4 mb-3">
+            <h3 class="section-title safe-text">보호자가 꼭 알아야 할 핵심</h3>
+            <div class="space-y-2 text-[12px] text-slate-700 leading-relaxed safe-text">
+              <p>PHV는 Peak Height Velocity의 약자로, 최대 성장 속도 연령을 의미합니다. 이 시기에는 아이가 평생 동안 가장 키가 빠르게 자라는 시기입니다. 이 시기 전후에는 키만 크는 것이 아니라 운동능력인 힘, 스피드, 민첩성, 밸런스, 회복력까지 함께 흔들릴 수 있습니다.</p>
+              <p>그래서 지금 당장 경기장에서 빠르고 강해 보인다고 해서 장기적으로도 가장 유리한 것은 아닐 수 있습니다. 반대로 지금 작고 힘들어 보여도 나중에 크게 성장하며 더 높은 잠재력을 드러내는 경우도 많습니다.</p>
+              <p>보호자 입장에서는 지금 잘하느냐만 보는 것이 아니라, 지금 우리 아이가 어떤 성장 구간에 있고 무엇을 버티며 지나가고 있는가를 함께 보는 시선이 중요합니다.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="card p-4">
+              <h3 class="section-title safe-text">PHV 시기 흔한 변화</h3>
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• 키는 빨리 크는데 몸이 어색해질 수 있습니다.</li>
+                <li>• 달리기, 턴, 볼터치가 잠시 둔해질 수 있습니다.</li>
+                <li>• 무릎, 발뒤꿈치, 허벅지 뒤쪽 통증이 늘 수 있습니다.</li>
+                <li>• 피로 회복이 늦어지고 경기력 기복이 커질 수 있습니다.</li>
+              </ul>
+            </div>
+
+            <div class="card p-4">
+              <h3 class="section-title safe-text">보호자가 길게 봐야 하는 이유</h3>
+              <ul class="text-[12px] text-slate-600 space-y-1.5 leading-relaxed safe-text">
+                <li>• 조기성장은 당장의 우위를 줄 수 있지만 장기 우위를 보장하지 않습니다.</li>
+                <li>• 지연성장은 지금 불리해 보여도 이후 크게 성장할 가능성이 있습니다.</li>
+                <li>• 급성장기 어색함은 태도 문제가 아니라 성장 적응 문제일 수 있습니다.</li>
+                <li>• 결국 중요한 것은 현재 결과보다 장기 발달 경로입니다.</li>
+              </ul>
+            </div>
+          </div>
+
+
+        <div class="page-footer">
+          <div class="footer-note">
+            <div class="footer-copy">© juniorgoldenage</div>
+            <div class="tiny text-right safe-text">
+              본 출력물은 juniorgoldenage의 데이터 시각화 리포트입니다. 의료법상 의료행위를 직접 수행하지 않으며, 제휴 의료기관의 검사 결과를 기반으로 분석 정보를 제공합니다. 의학적 판단 및 진단은 반드시 의료진을 통해 확인해야 합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let pahChartInstance = null;
+    let heightChartInstance = null;
+    let weightChartInstance = null;
+
+    const growthReferenceData = {
+      male: {
+        ages: [2, 4, 6, 8, 10, 12, 14, 16, 18],
+        height: {
+          p3:  [82.5, 95.8, 107.3, 118.8, 129.8, 139.7, 152.8, 164.0, 167.2],
+          p10: [84.5, 98.2, 110.2, 121.7, 133.0, 143.3, 156.4, 167.0, 169.8],
+          p25: [86.0, 100.7, 113.0, 124.5, 136.0, 146.5, 160.0, 170.0, 172.4],
+          p50: [87.8, 103.2, 115.5, 127.5, 138.8, 149.8, 163.5, 172.0, 174.2],
+          p75: [89.7, 105.7, 118.0, 130.3, 142.0, 153.3, 167.0, 174.0, 176.5],
+          p90: [91.2, 107.8, 120.5, 133.0, 145.0, 156.0, 170.0, 177.0, 179.5],
+          p97: [93.0, 110.0, 123.0, 136.0, 148.0, 159.0, 173.0, 180.0, 182.5]
+        },
+        weight: {
+          p3:  [10.2, 13.1, 16.3, 20.2, 24.8, 31.2, 40.3, 49.7, 53.2],
+          p10: [10.9, 14.1, 17.8, 22.0, 27.3, 34.5, 44.5, 53.8, 57.0],
+          p25: [11.6, 15.2, 19.2, 24.1, 30.2, 38.5, 49.0, 58.5, 61.5],
+          p50: [12.4, 16.5, 21.0, 27.0, 34.5, 45.0, 56.0, 63.0, 66.0],
+          p75: [13.4, 18.0, 23.5, 30.5, 39.5, 51.8, 63.5, 69.8, 73.5],
+          p90: [14.4, 19.7, 26.0, 34.0, 44.8, 58.5, 69.0, 76.0, 80.5],
+          p97: [15.2, 21.2, 28.5, 37.8, 49.5, 64.5, 74.8, 82.0, 87.0]
+        }
+      },
+      female: {
+        ages: [2, 4, 6, 8, 10, 12, 14, 16, 18],
+        height: {
+          p3:  [81.5, 95.0, 106.8, 118.0, 129.5, 142.8, 150.8, 152.0, 152.3],
+          p10: [83.5, 97.2, 109.5, 121.0, 132.8, 146.2, 153.5, 154.8, 155.2],
+          p25: [85.0, 99.5, 112.0, 123.8, 136.0, 149.2, 156.0, 157.8, 158.2],
+          p50: [87.0, 102.0, 115.0, 126.8, 139.0, 152.0, 159.5, 161.3, 161.8],
+          p75: [88.8, 104.5, 117.5, 129.8, 142.0, 154.8, 162.0, 163.8, 164.2],
+          p90: [90.5, 106.8, 120.0, 132.5, 145.0, 157.0, 164.2, 165.8, 166.0],
+          p97: [92.0, 109.0, 122.5, 135.0, 148.0, 159.2, 166.0, 167.3, 167.8]
+        },
+        weight: {
+          p3:  [9.8, 12.8, 16.0, 20.2, 25.5, 33.5, 41.8, 45.3, 46.0],
+          p10: [10.5, 13.9, 17.5, 22.2, 28.3, 36.8, 45.0, 48.5, 49.0],
+          p25: [11.2, 15.0, 19.0, 24.6, 31.8, 40.8, 48.5, 52.2, 53.0],
+          p50: [12.0, 16.2, 20.8, 26.8, 34.2, 46.0, 53.5, 56.5, 57.3],
+          p75: [13.1, 17.8, 23.2, 30.8, 39.8, 52.8, 59.5, 62.2, 63.0],
+          p90: [14.1, 19.5, 25.8, 34.5, 44.8, 58.8, 64.5, 68.0, 69.0],
+          p97: [15.0, 21.0, 28.0, 38.2, 49.5, 64.5, 69.8, 74.0, 75.0]
+        }
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('visitDate').valueAsDate = new Date();
+      Chart.defaults.font.family = '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif';
+      Chart.defaults.color = '#64748b';
+      generateReport();
+    });
+
+    function calculateApproxPercentile(value, refData) {
+      const levels = [
+        { p: 3, key: 'p3' },
+        { p: 10, key: 'p10' },
+        { p: 25, key: 'p25' },
+        { p: 50, key: 'p50' },
+        { p: 75, key: 'p75' },
+        { p: 90, key: 'p90' },
+        { p: 97, key: 'p97' }
+      ];
+
+      for (let i = 0; i < levels.length - 1; i++) {
+        const a = refData[levels[i].key];
+        const b = refData[levels[i + 1].key];
+        if (value >= a && value <= b) {
+          const t = (value - a) / (b - a || 1);
+          return +(levels[i].p + t * (levels[i + 1].p - levels[i].p)).toFixed(1);
+        }
+      }
+
+      if (value < refData.p3) return 1.0;
+      if (value > refData.p97) return 99.0;
+      return 50.0;
+    }
+
+    function interpolate(x, xValues, yValues) {
+      let i = 0;
+      if (x <= xValues[0]) return yValues[0];
+      if (x >= xValues[xValues.length - 1]) return yValues[yValues.length - 1];
+      while (x > xValues[i + 1]) i++;
+      const t = (x - xValues[i]) / (xValues[i + 1] - xValues[i]);
+      return yValues[i] * (1 - t) + yValues[i + 1] * t;
+    }
+
+    function getPercentileLabel(pct) {
+      const levels = [3, 10, 25, 50, 75, 90, 97];
+      let closest = levels[0];
+      let minDiff = Math.abs(pct - closest);
+      levels.forEach(level => {
+        const diff = Math.abs(pct - level);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = level;
+        }
+      });
+      return closest;
+    }
+
+    function getHeightComment(pct) {
+      if (pct >= 90) return '또래 대비 매우 큰 편';
+      if (pct >= 75) return '또래 대비 큰 편';
+      if (pct >= 25) return '또래 평균 범위';
+      if (pct >= 10) return '또래 대비 작은 편';
+      return '또래 대비 매우 작은 편';
+    }
+
+    function getWeightComment(pct) {
+      if (pct >= 90) return '체중이 매우 높은 편';
+      if (pct >= 75) return '체중이 높은 편';
+      if (pct >= 25) return '체중은 평균 범위';
+      if (pct >= 10) return '체중이 낮은 편';
+      return '체중이 매우 낮은 편';
+    }
+
+    const pointLabelPlugin = {
+      id: 'pointLabelPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const opts = chart.options.plugins.pointLabelPlugin;
+        if (!opts) return;
+
+        const datasetIndex = opts.datasetIndex ?? 1;
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (!meta || !meta.data || !meta.data.length) return;
+
+        const point = meta.data[0];
+        const lines = opts.lines || [];
+        const x = point.x;
+        const y = point.y + 12;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        lines.forEach((line, idx) => {
+          ctx.font = idx === 0 ? "600 8px Pretendard" : "400 7px Pretendard";
+          ctx.fillStyle = idx === 0 ? "#334155" : "#64748b";
+          ctx.fillText(line, x, y + (idx * 10));
+        });
+
+        ctx.restore();
+      }
+    };
+
+    function generateReport() {
+      const name = document.getElementById('name').value;
+      const gender = document.getElementById('gender').value;
+      const visitDate = new Date(document.getElementById('visitDate').value);
+      const birthDate = new Date(document.getElementById('birthDate').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const baYear = parseFloat(document.getElementById('boneAgeYear').value);
+      const baMonth = parseFloat(document.getElementById('boneAgeMonth').value);
+      const fHt = parseFloat(document.getElementById('fatherHeight').value);
+      const mHt = parseFloat(document.getElementById('motherHeight').value);
+      const growthPhase = document.getElementById('growthPhase').value;
+      const predictedHeight = parseFloat(document.getElementById('predictedHeight').value);
+
+      const ageMonths = (visitDate - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
+      const ageYears = Math.floor(ageMonths / 12);
+      const ageMonthRem = Math.floor(ageMonths % 12);
+      const currentAge = ageMonths / 12;
+      const boneAgeTotal = baYear + (baMonth / 12);
+      const bmi = weight / ((height / 100) * (height / 100));
+
+      document.getElementById('dispName').innerText = name;
+      document.getElementById('dispAge').innerText = `${ageYears}세 ${ageMonthRem}개월`;
+      document.getElementById('dispGender').innerText = gender === 'male' ? '남아' : '여아';
+      document.getElementById('dispDate').innerText = visitDate.toLocaleDateString();
+
+      document.getElementById('resHeight').innerText = height.toFixed(1);
+      document.getElementById('resWeight').innerText = weight.toFixed(1);
+      document.getElementById('resBMI').innerText = bmi.toFixed(1);
+      document.getElementById('resBoneAge').innerText = `${baYear}세 ${baMonth}개월`;
+
+      let bmiStatus = "정상 범위";
+      let bmiColor = "text-indigo-600 bg-indigo-50";
+      if (bmi < 15) {
+        bmiStatus = "저체중";
+        bmiColor = "text-amber-600 bg-amber-50";
+      } else if (bmi > 23) {
+        bmiStatus = "과체중";
+        bmiColor = "text-rose-600 bg-rose-50";
+      }
+
+      const bmiEl = document.getElementById('resBmiStatus');
+      bmiEl.innerText = bmiStatus;
+      bmiEl.className = `mt-2 text-xs font-medium w-max px-2 py-0.5 rounded-md safe-text ${bmiColor}`;
+
+      const gap = boneAgeTotal - currentAge;
+      const gapText = gap > 0 ? `+${gap.toFixed(1)}년 빠름` : `${gap.toFixed(1)}년 느림`;
+      const gapEl = document.getElementById('resBoneGap');
+      gapEl.innerText = gapText;
+      gapEl.className = gap > 1
+        ? "mt-2 text-xs font-medium text-rose-600 bg-rose-50 w-max px-2 py-0.5 rounded-md safe-text"
+        : "mt-2 text-xs font-medium text-amber-600 bg-amber-50 w-max px-2 py-0.5 rounded-md safe-text";
+
+      const ref = growthReferenceData[gender];
+      const ageRefHeight = {
+        p3: interpolate(currentAge, ref.ages, ref.height.p3),
+        p10: interpolate(currentAge, ref.ages, ref.height.p10),
+        p25: interpolate(currentAge, ref.ages, ref.height.p25),
+        p50: interpolate(currentAge, ref.ages, ref.height.p50),
+        p75: interpolate(currentAge, ref.ages, ref.height.p75),
+        p90: interpolate(currentAge, ref.ages, ref.height.p90),
+        p97: interpolate(currentAge, ref.ages, ref.height.p97)
+      };
+      const ageRefWeight = {
+        p3: interpolate(currentAge, ref.ages, ref.weight.p3),
+        p10: interpolate(currentAge, ref.ages, ref.weight.p10),
+        p25: interpolate(currentAge, ref.ages, ref.weight.p25),
+        p50: interpolate(currentAge, ref.ages, ref.weight.p50),
+        p75: interpolate(currentAge, ref.ages, ref.weight.p75),
+        p90: interpolate(currentAge, ref.ages, ref.weight.p90),
+        p97: interpolate(currentAge, ref.ages, ref.weight.p97)
+      };
+
+      const pctH = calculateApproxPercentile(height, ageRefHeight);
+      const pctW = calculateApproxPercentile(weight, ageRefWeight);
+
+      document.getElementById('resHeightPct').innerText = `상위 ${(100 - pctH).toFixed(1)}% (${pctH.toFixed(1)}th)`;
+      document.getElementById('resWeightPct').innerText = `상위 ${(100 - pctW).toFixed(1)}% (${pctW.toFixed(1)}th)`;
+      document.getElementById('chartHeightPct').innerText = `${height.toFixed(1)}cm · ${pctH.toFixed(1)}th`;
+      document.getElementById('chartWeightPct').innerText = `${weight.toFixed(1)}kg · ${pctW.toFixed(1)}th`;
+
+      const bwa1 = document.getElementById('bwaComment1');
+      const bwa2 = document.getElementById('bwaComment2');
+
+      if (bmiStatus === "과체중") {
+        bwa1.innerHTML = "<strong>BMI가 표준 범위보다 높습니다.</strong> 체지방률 관리가 필요합니다.";
+        bwa2.innerText = "탄수화물 섭취를 줄이고 활동량을 늘려 체지방 감소를 유도하세요.";
+      } else if (bmiStatus === "저체중") {
+        bwa1.innerHTML = "<strong>BMI가 표준 범위보다 낮습니다.</strong> 근육량 부족이 우려됩니다.";
+        bwa2.innerText = "고단백 식단과 충분한 칼로리 섭취를 통해 체중 증량이 필요합니다.";
+      } else {
+        bwa1.innerHTML = "현재 BMI는 <strong>표준 범위 내에 있어</strong> 균형이 양호합니다.";
+        bwa2.innerText = "현재의 식습관을 유지하되 급성장기에 필요한 단백질과 칼슘 섭취를 챙겨주세요.";
+      }
+
+      updateGrowthPhase(growthPhase);
+
+      const mph = gender === 'male'
+        ? (fHt + mHt + 13) / 2
+        : (fHt + mHt - 13) / 2;
+
+      const baPred = predictedHeight;
+      const baPredMin = (baPred - 1.5).toFixed(1);
+      const baPredMax = (baPred + 1.5).toFixed(1);
+
+      document.getElementById('valMPH').innerText = mph.toFixed(1) + " cm";
+      document.getElementById('valCurHeight').innerText = height.toFixed(1) + " cm";
+      document.getElementById('valBone').innerText = `${baPredMin} ~ ${baPredMax} cm`;
+
+      drawPahChart(mph, height, baPred, baPredMin, baPredMax);
+      drawGrowthCurves(gender, currentAge, height, weight, pctH, pctW);
+
+      const nextVisit = new Date(visitDate);
+      nextVisit.setMonth(nextVisit.getMonth() + 3);
+      const yyyy = nextVisit.getFullYear();
+      const mm = String(nextVisit.getMonth() + 1).padStart(2, '0');
+      const dd = String(nextVisit.getDate()).padStart(2, '0');
+      document.getElementById('nextVisitDate').innerText = `${yyyy}.${mm}.${dd}`;
+
+      updatePHVTypePage(pctH, growthPhase);
+    }
+
+    function updateGrowthPhase(phase) {
+      const steps = ['ph-pre', 'ph-s1', 'ph-s2', 'ph-s3', 'ph-s4', 'ph-s5'];
+      steps.forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'phase-step';
+      });
+
+      const map = {
+        'Pre-PHV': { id: 'ph-pre', pos: '8%', badge: 'Pre-PHV', desc: '아직 급성장기가 오지 않았습니다. 기초 체력과 영양 비축이 중요한 시기입니다.' },
+        'Stage 1': { id: 'ph-s1', pos: '25%', badge: 'Stage 1 (가속기)', desc: '성장 속도가 빨라지기 시작했습니다. 성장판이 활발히 반응하는 구간입니다.' },
+        'Stage 2': { id: 'ph-s2', pos: '41%', badge: 'Stage 2 (PHV)', desc: '인생에서 키가 가장 많이 자라는 최고 성장기입니다. 수면과 영양 관리가 특히 중요합니다.' },
+        'Stage 3': { id: 'ph-s3', pos: '58%', badge: 'Stage 3 (감속기)', desc: '성장 속도가 줄어드는 시기입니다. 부하 관리와 회복 전략이 중요합니다.' },
+        'Stage 4': { id: 'ph-s4', pos: '75%', badge: 'Stage 4 (종료 초기)', desc: '성장이 거의 마무리 단계에 접어들었습니다. 남은 성장 여지를 세밀하게 확인해야 합니다.' },
+        'Stage 5': { id: 'ph-s5', pos: '91%', badge: 'Stage 5 (종료 임박)', desc: '성장이 거의 끝나는 단계입니다. 자세와 체형 관리의 비중이 커집니다.' }
+      };
+
+      const target = map[phase];
+      if (target) {
+        document.getElementById(target.id).className = 'phase-step phase-bg-active';
+        document.getElementById('phaseMarker').style.left = target.pos;
+        document.getElementById('currentPhaseBadge').innerText = target.badge;
+        document.getElementById('phaseDescription').innerText = target.desc;
+        updateMedicalOpinion(phase);
+      }
+    }
+
+    function updateMedicalOpinion(phase) {
+      const opinionBox = document.getElementById('medicalOpinionText');
+      let opinionText = "";
+
+      switch (phase) {
+        case 'Pre-PHV':
+          opinionText = "현재 급성장 전 단계입니다. 아직 본격적인 성장 스퍼트 이전이므로 기초 체력과 수면 습관, 영양 상태를 단단히 다지는 것이 중요합니다.";
+          break;
+        case 'Stage 1':
+          opinionText = "급성장 초기 단계에 진입했습니다. 성장판 자극과 신체 성숙이 빨라지는 시기이므로 충분한 수면과 균형 잡힌 영양 섭취가 필요합니다. 스포츠선수라면 훈련 부하를 세심히 조절해야 합니다.";
+          break;
+        case 'Stage 2':
+          opinionText = "현재 최고 성장 속도(PHV) 구간으로 판단됩니다. 키가 많이 자라는 시기이므로 수면과 영양, 회복 관리가 중요합니다. 무릎, 발목, 햄스트링, 아킬레스 주변 부하를 세심하게 살피는 것이 좋습니다.";
+          break;
+        case 'Stage 3':
+          opinionText = "성장 감속기로 접어들었습니다. 키 성장은 이어지지만 속도는 줄어드는 단계입니다. 체형 변화와 밸런스 변화를 함께 겪을 수 있어 유연성, 코어 안정성, 회복 루틴을 병행하는 것이 좋습니다.";
+          break;
+        case 'Stage 4':
+          opinionText = "성장이 마무리되어 가는 단계입니다. 남은 성장 잠재력을 점검하면서 자세와 정렬, 회복 전략을 함께 관리하는 것이 중요합니다.";
+          break;
+        case 'Stage 5':
+          opinionText = "성장이 거의 종료된 단계입니다. 이후에는 체형 유지, 기능적 유연성, 근력 균형, 부상 예방 중심의 관리가 더 중요해집니다.";
+          break;
+      }
+
+      opinionBox.value = opinionText;
+    }
+
+    function drawPahChart(mph, curHeight, bone, boneMin, boneMax) {
+      const ctx = document.getElementById('pahChart').getContext('2d');
+      if (pahChartInstance) pahChartInstance.destroy();
+
+      const minVal = Math.floor(Math.min(mph, curHeight, bone) / 10) * 10 - 5;
+
+      pahChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['유전적 예측', '현재 키', '입력 예측 키'],
+          datasets: [{
+            data: [mph, curHeight, bone],
+            backgroundColor: ['#f1f5f9', '#e0f2fe', '#e0e7ff'],
+            borderColor: ['#cbd5e1', '#38bdf8', '#818cf8'],
+            borderWidth: 1,
+            borderRadius: 6,
+            barThickness: 28
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e293b',
+              padding: 8,
+              callbacks: {
+                label: function(context) {
+                  if (context.dataIndex === 2) {
+                    return ` 예상 범위: ${boneMin} ~ ${boneMax} cm`;
+                  }
+                  return ` ${context.raw.toFixed(1)} cm`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: minVal,
+              max: 190,
+              grid: { color: '#f1f5f9', drawBorder: false },
+              ticks: { font: { family: '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif', size: 9 }, stepSize: 5 }
+            },
+            x: {
+              grid: { display: false, drawBorder: false },
+              ticks: { font: { family: '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif', size: 9, weight: '500' }, color: '#64748b' }
+            }
+          }
+        }
+      });
+    }
+
+    function drawGrowthCurves(gender, age, height, weight, pctH, pctW) {
+      const ref = growthReferenceData[gender];
+      const ageLabels = ref.ages;
+
+      const hPctLabel = getPercentileLabel(pctH);
+      const wPctLabel = getPercentileLabel(pctW);
+
+      const heightNote = `${height.toFixed(1)}cm`;
+      const heightPctNote = `${pctH.toFixed(1)}th`;
+      const heightComment = getHeightComment(pctH);
+
+      const weightNote = `${weight.toFixed(1)}kg`;
+      const weightPctNote = `${pctW.toFixed(1)}th`;
+      const weightComment = getWeightComment(pctW);
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { bottom: 34 } },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              boxWidth: 6,
+              padding: 8,
+              font: { family: '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif', size: 8 }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: 2,
+            max: 18,
+            grid: { display: false },
+            ticks: { font: { family: '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif', size: 8 } }
+          },
+          y: {
+            grid: { color: '#f1f5f9' },
+            ticks: { font: { family: '"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif', size: 8 } }
+          }
+        }
+      };
+
+      const percentileStyles = {
+        p3:  { color: '#d1d5db', width: 1.0, dash: [2, 2] },
+        p10: { color: '#cbd5e1', width: 1.0, dash: [4, 3] },
+        p25: { color: '#94a3b8', width: 1.1, dash: [5, 4] },
+        p50: { color: '#334155', width: 1.8, dash: [] },
+        p75: { color: '#94a3b8', width: 1.1, dash: [5, 4] },
+        p90: { color: '#cbd5e1', width: 1.0, dash: [4, 3] },
+        p97: { color: '#d1d5db', width: 1.0, dash: [2, 2] }
+      };
+
+      const heightDatasets = ['p3','p10','p25','p50','p75','p90','p97'].map(key => ({
+        label: key.replace('p', '') + 'th',
+        data: ref.height[key],
+        borderColor: percentileStyles[key].color,
+        borderWidth: percentileStyles[key].width,
+        borderDash: percentileStyles[key].dash,
+        pointRadius: 0,
+        tension: 0.35
+      }));
+
+      const weightDatasets = ['p3','p10','p25','p50','p75','p90','p97'].map(key => ({
+        label: key.replace('p', '') + 'th',
+        data: ref.weight[key],
+        borderColor: percentileStyles[key].color,
+        borderWidth: percentileStyles[key].width,
+        borderDash: percentileStyles[key].dash,
+        pointRadius: 0,
+        tension: 0.35
+      }));
+
+      const ctxH = document.getElementById('heightChart').getContext('2d');
+      if (heightChartInstance) heightChartInstance.destroy();
+      heightChartInstance = new Chart(ctxH, {
+        type: 'line',
+        data: {
+          labels: ageLabels,
+          datasets: [
+            ...heightDatasets,
+            {
+              label: `현재 위치 (${hPctLabel}th 근접)`,
+              data: [{ x: age, y: height }],
+              backgroundColor: '#0ea5e9',
+              borderColor: '#0ea5e9',
+              pointRadius: 5,
+              pointHoverRadius: 6,
+              type: 'scatter'
+            }
+          ]
+        },
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            pointLabelPlugin: {
+              datasetIndex: 7,
+              lines: [heightNote, heightPctNote, heightComment]
+            }
+          }
+        },
+        plugins: [pointLabelPlugin]
+      });
+
+      const ctxW = document.getElementById('weightChart').getContext('2d');
+      if (weightChartInstance) weightChartInstance.destroy();
+      weightChartInstance = new Chart(ctxW, {
+        type: 'line',
+        data: {
+          labels: ageLabels,
+          datasets: [
+            ...weightDatasets,
+            {
+              label: `현재 위치 (${wPctLabel}th 근접)`,
+              data: [{ x: age, y: weight }],
+              backgroundColor: '#10b981',
+              borderColor: '#10b981',
+              pointRadius: 5,
+              pointHoverRadius: 6,
+              type: 'scatter'
+            }
+          ]
+        },
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            pointLabelPlugin: {
+              datasetIndex: 7,
+              lines: [weightNote, weightPctNote, weightComment]
+            }
+          }
+        },
+        plugins: [pointLabelPlugin]
+      });
+    }
+
+    function getHeightStatus(pctH) {
+      return pctH < 50 ? 'small' : 'tall';
+    }
+
+    function getMaturationStatus(growthPhase) {
+      if (growthPhase === 'Pre-PHV' || growthPhase === 'Stage 1') return 'late';
+      if (growthPhase === 'Stage 2' || growthPhase === 'Stage 3') return 'ontime';
+      return 'early';
+    }
+
+    function updatePHVTypePage(pctH, growthPhase) {
+      const heightStatus = getHeightStatus(pctH);
+      const maturationStatus = getMaturationStatus(growthPhase);
+
+      const typeMap = {
+        small_late: {
+          title: '작은키 + 지연성장형',
+          summary: '지금은 체격과 힘에서 불리해 보일 수 있지만 장기적으로는 성장 여지가 남아 있을 가능성이 큽니다.',
+          performance: '경합에서는 밀릴 수 있어도 공간 인지와 판단 속도, 위치선정이 강점으로 자랄 수 있습니다.',
+          parentGuide: '지금 당장 결과를 재촉하지 말고 자신감이 꺾이지 않도록 지지해 주세요.'
+        },
+        small_ontime: {
+          title: '작은키 + 평균성장형',
+          summary: '체격은 작은 편이지만 성장 흐름은 평균 범위입니다. 급성장 전후에는 움직임이 일시적으로 둔해질 수 있습니다.',
+          performance: '민첩성과 잔기술은 장점이 될 수 있으나 PHV 전후에는 밸런스와 타이밍이 흔들릴 수 있습니다.',
+          parentGuide: '작아 보인다고 조급해하지 말고 기술 유지와 부상 예방에 집중하는 것이 좋습니다.'
+        },
+        small_early: {
+          title: '작은키 + 조기성장형',
+          summary: '지금은 성숙이 빨라 또래보다 단단하고 빠르게 보일 수 있지만 최종 신장 여지는 상대적으로 제한될 수 있습니다.',
+          performance: '짧은 구간 가속과 민첩한 돌파, 낮은 무게중심이 장점이 될 수 있습니다.',
+          parentGuide: '현재 피지컬 우위에만 기대지 않도록 기술과 판단을 더 길게 키워주는 것이 중요합니다.'
+        },
+        tall_late: {
+          title: '큰키 + 지연성장형',
+          summary: '향후 최종 신장이 클 가능성이 있지만 현재는 긴 팔다리와 미성숙한 근육 제어 때문에 몸이 어색해 보일 수 있습니다.',
+          performance: '달리기와 턴이 서툴고 볼터치 미스가 늘 수 있지만 이는 성장 적응 과정일 가능성이 큽니다.',
+          parentGuide: '서두르지 말고 코디네이션과 밸런스, 기초 움직임 훈련을 안정적으로 이어가게 도와주세요.'
+        },
+        tall_ontime: {
+          title: '큰키 + 평균성장형',
+          summary: '신체 조건과 성장 흐름이 모두 준수한 유형입니다. 다만 PHV 전후에는 부하 관리와 통증 체크가 중요합니다.',
+          performance: '스피드와 파워가 좋아질 여지가 크지만 급성장기에는 무릎, 허리, 아킬레스 부담이 커질 수 있습니다.',
+          parentGuide: '몸이 좋다고 무리하게 시키기보다 회복과 통증 관찰을 함께 하면서 장기적 안정성을 확보해 주세요.'
+        },
+        tall_early: {
+          title: '큰키 + 조기성장형',
+          summary: '현재 연령대에서는 가장 돋보여 보일 수 있는 유형입니다. 그러나 지금의 우위가 장기적으로 그대로 유지된다는 뜻은 아닙니다.',
+          performance: '파워와 스프린트, 몸싸움에서 강한 모습을 보이기 쉽습니다.',
+          parentGuide: '현재 우세함만 믿지 말고 전술 이해와 판단, 기술 섬세함까지 함께 키워줘야 이후에도 경쟁력이 유지됩니다.'
+        }
+      };
+
+      const selected = typeMap[`${heightStatus}_${maturationStatus}`];
+      document.getElementById('phvTypeTitle').innerText = selected.title;
+      document.getElementById('phvTypeSummary').innerText = selected.summary;
+      document.getElementById('phvTypePerformance').value = selected.performance;
+      document.getElementById('phvTypeParentGuide').value = selected.parentGuide;
+    }
+  </script>
+</body>
+</html>
